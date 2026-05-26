@@ -11,7 +11,10 @@
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.3.0",
+<<<<<<< HEAD
     "axios": "^1.16.1",
+=======
+>>>>>>> 48137ab3b14de77c3661772fc23baade41bc7d78
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },
