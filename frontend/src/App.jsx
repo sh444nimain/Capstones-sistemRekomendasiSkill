@@ -29,8 +29,9 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-500 font-sans text-slate-900 dark:text-slate-100 pb-20">
       <nav className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-4 md:px-8 py-4 transition-all">
-        <div className="max-w-[1440px] mx-auto grid grid-cols-2 lg:grid-cols-3 items-center">
-          <div className="flex justify-start items-center gap-2" onClick={() => setCurrentView("input")}>
+        <div className="max-w-[1440px] mx-auto flex justify-between items-center">
+
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => setCurrentView("input")}>
             <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 dark:shadow-none">
               <span className="text-white font-black text-lg">S</span>
             </div>
@@ -38,38 +39,18 @@ function App() {
               SkillMatch<span className="text-blue-600">.AI</span>
             </span>
           </div>
-          <div className="hidden lg:flex justify-center items-center gap-10 text-sm font-bold text-slate-500 dark:text-slate-400">
-            <button onClick={() => setCurrentView("input")} className="hover:text-blue-600 transition">Beranda</button>
-            <button className="hover:text-blue-600 transition">Dataset</button>
-            <button className="hover:text-blue-600 transition">Tentang SDG</button>
-          </div>
-          <div className="flex justify-end items-center gap-3">
-            <button className="px-5 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl shadow-lg active:scale-95 transition-all">
-              Daftar
-            </button>
+
+          <div className="flex items-center">
             <button
               onClick={() => setDarkMode(!darkMode)}
-              className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-yellow-400 border border-slate-200 dark:border-slate-700"
+              className="p-2.5 px-5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-yellow-400 border border-slate-200 dark:border-slate-700 text-sm font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
             >
               {darkMode ? "Mode Terang" : "Mode Gelap"}
             </button>
           </div>
+
         </div>
       </nav>
-
-      <div className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-[400px]">
-        <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-2 flex justify-around items-center">
-          <button onClick={() => setCurrentView("input")} className="flex flex-col items-center p-2 text-blue-600">
-            <span className="text-[10px] font-bold">Beranda</span>
-          </button>
-          <button className="flex flex-col items-center p-2 text-slate-500 dark:text-slate-400">
-            <span className="text-[10px] font-bold">Dataset</span>
-          </button>
-          <button className="flex flex-col items-center p-2 text-slate-500 dark:text-slate-400">
-            <span className="text-[10px] font-bold">Tentang SDG</span>
-          </button>
-        </div>
-      </div>
 
       <main className="px-4 pt-16">
         {currentView === "input" && (
