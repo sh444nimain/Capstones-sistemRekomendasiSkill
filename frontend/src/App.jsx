@@ -1,16 +1,22 @@
 import React, { useState, useEffect } from "react";
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
 import './App.css'
 import AnalysisDashboard from "./components/AnalysisDashboard";
 import ResultDashboard from "./components/ResultDashboard";
 import SkillInput from "./components/SkillInput";
 
+// IMPORT SUPABASE DAN AUTH
+import { supabase } from './supabaseClient';
+import Auth from './components/Auth';
+
 function App() {
   const [currentView, setCurrentView] = useState("input");
   const [darkMode, setDarkMode] = useState(false);
+  const [session, setSession] = useState(null);
+  
+  // State untuk mengontrol apakah Pop-up Login sedang terbuka
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
+  // Efek Mode Gelap
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
@@ -18,6 +24,23 @@ function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [darkMode]);
+
+  // Efek Memantau Login Supabase
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      // Jika berhasil login, otomatis tutup pop-up modalnya
+      if (session) setShowAuthModal(false); 
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleStartAnalysis = () => {
     setCurrentView("loading");
@@ -28,6 +51,8 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-500 font-sans text-slate-900 dark:text-slate-100 pb-20">
+      
+      {/* NAVBAR */}
       <nav className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-4 md:px-8 py-4 transition-all">
         <div className="max-w-[1440px] mx-auto flex justify-between items-center">
 
@@ -40,18 +65,52 @@ function App() {
             </span>
           </div>
 
-          <div className="flex items-center">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => setDarkMode(!darkMode)}
               className="p-2.5 px-5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-yellow-400 border border-slate-200 dark:border-slate-700 text-sm font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
             >
               {darkMode ? "Mode Terang" : "Mode Gelap"}
             </button>
+
+            {/* TOMBOL DINAMIS: MASUK ATAU LOGOUT */}
+            {!session ? (
+              <button
+                onClick={() => setShowAuthModal(true)}
+                className="p-2.5 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition-all shadow-md shadow-blue-200 dark:shadow-none"
+              >
+                Masuk / Daftar
+              </button>
+            ) : (
+              <button
+                onClick={() => supabase.auth.signOut()}
+                className="p-2.5 px-5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition-all shadow-md"
+              >
+                Logout
+              </button>
+            )}
           </div>
 
         </div>
       </nav>
 
+      {/* POP-UP MODAL AUTH (Hanya muncul jika tombol diklik) */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-2 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            {/* Tombol Tutup Pop-up */}
+            <button 
+              onClick={() => setShowAuthModal(false)}
+              className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xl font-bold"
+            >
+              ✕
+            </button>
+            <Auth />
+          </div>
+        </div>
+      )}
+
+      {/* MAIN CONTENT */}
       <main className="px-4 pt-16">
         {currentView === "input" && (
           <div className="animate-in fade-in slide-in-from-top-4 duration-700">
@@ -67,7 +126,9 @@ function App() {
                 Bandingkan keahlianmu dengan kebutuhan industri nyata melalui analisis NLP yang akurat untuk mendukung pekerjaan layak bagi mahasiswa.
               </p>
             </header>
-            <SkillInput onAnalyze={handleStartAnalysis} />
+            
+            {/* Kita oper data session ke SkillInput */}
+            <SkillInput onAnalyze={handleStartAnalysis} session={session} />
           </div>
         )}
 
@@ -77,6 +138,7 @@ function App() {
             <h3 className="text-2xl font-bold italic">Menganalisis Dataset...</h3>
           </div>
         )}
+        
         {currentView === "result" && (
           <div className="max-w-6xl mx-auto px-4 space-y-8 animate-in fade-in duration-700">
             <ResultDashboard onReset={() => setCurrentView("input")} />
@@ -94,6 +156,7 @@ function App() {
         )}
       </main>
 
+      {/* FOOTER */}
       <footer className="mt-32 pb-10 text-center border-t border-slate-100 dark:border-slate-900 pt-10">
         <p className="text-[10px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-[0.3em] mb-6">
           Official Prototype Project
