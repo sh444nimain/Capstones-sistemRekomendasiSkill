@@ -1,91 +1,99 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import tensorflow as tf
+import pandas as pd
+import joblib
+import re
+import string
 import numpy as np
-import os
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import PorterStemmer
+import nltk
+
+# Download semua resource NLTK yang dibutuhkan oleh tim Data Science
+nltk.download('punkt')
+nltk.download('punkt_tab')  # <-- WAJIB ADA UNTUK TOKENIZER BARU
+nltk.download('stopwords')
 
 app = Flask(__name__)
 CORS(app)
 
-# --- KONFIGURASI SESUAI NOTEBOOK ---
-MAX_TOKENS = 10000
-MAX_LENGTH = 200
-
-# 1. Inisialisasi Vectorizer (Harus sama dengan di Notebook)
-vectorizer = tf.keras.layers.TextVectorization(
-    max_tokens=MAX_TOKENS,
-    output_mode='int',
-    output_sequence_length=MAX_LENGTH
-)
-
-# Ambil lokasi folder
-base_path = os.path.dirname(os.path.abspath(__file__))
-# Path model (Opsi B: Keluar satu folder lalu masuk ke ai)
-model_path = os.path.join(base_path, '..', 'ai', 'job_classifier_model.keras')
-
-model = None
-
+# LOAD MODEL DAN DATASET
 try:
-    if os.path.exists(model_path):
-        model = tf.keras.models.load_model(model_path)
-        print("✅ Model Berhasil Dimuat!")
-        
-        # PENTING: Jika model tidak menyertakan vectorizer di dalamnya, 
-        # kita butuh meng-adapt vectorizer ini. 
-        # Untuk sementara kita buat dummy adapt agar layer tidak error saat dipanggil.
-        # Jika kamu punya file vocab, itu lebih baik.
-        vectorizer.adapt(["dummy data"]) 
-    else:
-        print(f"❌ File tidak ditemukan di: {model_path}")
+    df = pd.read_csv('../data/processed/cleaned_all_job.csv')
+    tfidf_vectorizer = joblib.load('../data/processed/tfidf_vectorizer.pkl')
+    tfidf_matrix = joblib.load('../data/processed/tfidf_matrix.pkl')
+    print("✅ Model TF-IDF dan Dataset Berhasil Dimuat!")
 except Exception as e:
-    print(f"❌ Error saat memuat model: {str(e)}")
+    print(f"❌ Gagal memuat file model/data: {str(e)}")
+
+# PREPROCESSING LOGIC
+stop_words = set(stopwords.words('english'))
+stemmer = PorterStemmer()
+
+def preprocess_text(text):
+    text = str(text).lower()
+    text = re.sub(r'\d+', '', text)
+    text = text.translate(str.maketrans('', '', string.punctuation))
+    tokens = word_tokenize(text)
+    tokens = [stemmer.stem(word) for word in tokens if word not in stop_words]
+    return ' '.join(tokens)
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    print("\n--- ADA PERMINTAAN MASUK ---")
     try:
         data = request.json
-        # Ambil teks, kecilkan huruf, dan hapus spasi di ujung
-        user_skills = str(data.get('skills', '')).lower().strip()
+        user_skills = data.get('skills', '')
         
         if not user_skills:
-            print("⚠️ Input kosong!")
             return jsonify({"error": "Skill tidak boleh kosong"}), 400
 
-        print(f"🔍 Memproses skill: '{user_skills}'")
+        # 1. Jalankan Preprocessing teks
+        clean_input = preprocess_text(user_skills)
+        
+        # 2. Transform ke Vektor TF-IDF
+        user_vector = tfidf_vectorizer.transform([clean_input])
+        
+        # 3. Hitung Cosine Similarity secara manual memakai matriks bawaan
+        # (Sama dengan metode perkalian dot jika vektor sudah dinormalisasi)
+        similarity_scores = (user_vector * tfidf_matrix.T).toarray().flatten()
+        
+        # 4. Ambil indeks kecocokan tertinggi
+        best_match_idx = np.argmax(similarity_scores)
+        highest_score = similarity_scores[best_match_idx]
+        
+        # Jika tidak ada lowongan yang mirip sama sekali (Skor = 0)
+        if highest_score == 0:
+            return jsonify({
+                "analysis": "Skill yang kamu masukkan belum spesifik atau tidak ditemukan di dataset.",
+                "recommendation": [{"role": "General Staff", "match": "0%"}],
+                "missing_skills": ["Pelajari skill teknis seperti Python, Javascript, atau SQL"]
+            })
 
-        # --- PROTEKSI TIPE DATA ---
-        # Kita pastikan data benar-benar berupa tensor string yang bersih
-        input_tensor = tf.constant([user_skills], dtype=tf.string)
-        
-        # Prediksi
-        prediction = model.predict(input_tensor)
-        
-        # Ambil skor tertinggi
-        predicted_role_index = int(np.argmax(prediction))
-        score = float(np.max(prediction))
-        
-        print(f"✅ Berhasil! Index: {predicted_role_index}, Confidence: {score:.2f}")
+        # 5. Ambil data baris pekerjaan terbaik
+        recommended_job = df.iloc[best_match_idx]
+        job_title = recommended_job['job_title']
+        job_category = recommended_job.get('category', 'Spesialis')
+        job_description = recommended_job.get('job_description', '')
 
-        # Urutan Role (WAJIB: Samakan urutan ini dengan LabelEncoder di Notebook kamu!)
-        roles = ["Frontend Developer", "Backend Developer", "Data Scientist", "UI/UX Designer"]
-        
-        if predicted_role_index < len(roles):
-            role_name = roles[predicted_role_index]
-        else:
-            role_name = "Digital Specialist"
+        # Analisis skill yang kurang secara sederhana
+        required_skills = str(recommended_job.get('job_skill_set', '')).lower()
+        missing = [skill.strip() for skill in required_skills.split(',') if skill.strip() and skill.strip() not in clean_input][:3]
+        if not missing:
+            missing = ["Tingkatkan portofolio proyek nyata"]
 
         return jsonify({
-            "analysis": f"Berdasarkan analisis AI pada skill '{user_skills}', kamu memiliki potensi besar di bidang {role_name}.",
-            "recommendation": [{"role": role_name, "match": f"{round(score * 100)}%"}],
-            "missing_skills": ["Pelajari lebih dalam framework populer di bidang ini."]
+            "analysis": f"Berdasarkan skill kamu, lowongan paling cocok adalah {job_title} di bidang {job_category}.",
+            "recommendation": [{"role": job_title, "match": f"{round(highest_score * 100)}%"}],
+            "missing_skills": missing
         })
 
     except Exception as e:
-        # Tampilkan error lengkap di terminal biar kita tahu kenapa dia ngambek
-        print(f"❌ ERROR TERJADI: {str(e)}")
-        return jsonify({"error": "Gagal memproses skill tersebut"}), 500
+        # Menampilkan detail error asli di terminal Python agar mudah dilacak
+        import traceback
+        print("❌ ERROR TERJADI DI PYTHON:")
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    # Gunakan port 5001 agar tidak bentrok dengan Node.js (5000)
     app.run(port=5001, debug=True)

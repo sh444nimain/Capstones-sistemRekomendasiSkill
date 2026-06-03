@@ -29,18 +29,14 @@ app.get('/', (req, res) => {
 // 1. MENGAMBIL RIWAYAT (Hanya milik user yang sedang login)
 app.get('/history', async (req, res) => {
   const { user_id } = req.query;
-
-  // Jika belum login (tidak ada user_id), kembalikan array kosong saja agar frontend tidak error
-  if (!user_id) {
-    return res.json([]);
-  }
-
+  if (!user_id) return res.json([]);
   try {
+    // Mengambil semua kolom termasuk created_at dan diurutkan dari yang terbaru
     const result = await pool.query(
       'SELECT * FROM ai_history WHERE user_id = $1 ORDER BY created_at DESC',
       [user_id]
     );
-    res.json(result.rows);
+    res.json(result.rows); // <--- Data created_at otomatis ikut terkirim ke frontend
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Gagal mengambil data history' });
@@ -68,25 +64,28 @@ app.delete('/history', async (req, res) => {
 // 3. LOGIKA ANALISIS AI DAN MENYIMPANNYA (Disertai user_id)
 // 3. LOGIKA ANALISIS AI (Sekarang Menggunakan Gemini agar Dinamis)
 // 3. LOGIKA ANALISIS AI (Menghubungkan ke Python Flask di Port 5001)
+// Jalur Analisis: Mengirim data ke Python Flask
 app.post('/analyze', async (req, res) => {
   const { skills, user_id } = req.body;
 
   if (!skills) {
-    return res.status(400).json({ error: 'Skill harus diisi' });
+    return res.status(400).json({ error: 'Skill tidak boleh kosong' });
   }
 
   try {
-    // A. Memanggil Python Flask (Pastikan app.py sedang RUNNING di terminal lain)
-    // Gunakan 127.0.0.1 agar lebih stabil di Windows
-    const aiResponse = await axios.post('http://127.0.0.1:5001/predict', { 
-      skills: skills 
+    console.log(`📡 Mengirim skill ke Python AI: "${skills}"`);
+
+    // --- MENEMBAK KE PYTHON FLASK (PORT 5001) ---
+    const pythonResponse = await axios.post('http://127.0.0.1:5001/predict', {
+      skills: skills
     });
 
-    // B. Mengambil data hasil prediksi dari Python
-    const { recommendation, missing_skills, analysis } = aiResponse.data;
+    // Mengambil hasil prediksi dari Python
+    const { analysis, recommendation, missing_skills } = pythonResponse.data;
 
-    // C. JIKA ADA USER ID -> Simpan ke Database Supabase
+    // Jika user_id ada (User Login), simpan ke database Supabase
     if (user_id) {
+      console.log("💾 Menyimpan hasil rekomendasi ke Supabase...");
       const queryText = `
         INSERT INTO ai_history (user_id, skills, recommendation, missing_skills, analysis)
         VALUES ($1, $2, $3, $4, $5) RETURNING *;
@@ -98,12 +97,11 @@ app.post('/analyze', async (req, res) => {
         JSON.stringify(missing_skills),
         analysis
       ];
-      
       const dbResult = await pool.query(queryText, values);
       return res.json(dbResult.rows[0]);
     }
 
-    // D. JIKA MODE TAMU -> Kirim hasil tanpa simpan
+    // Jika Mode Tamu (Tanpa Login), langsung kirim ke frontend
     res.json({
       skills,
       recommendation,
@@ -113,10 +111,9 @@ app.post('/analyze', async (req, res) => {
     });
 
   } catch (err) {
-    // Jika Python Flask mati, error-nya akan muncul di sini
-    console.error("❌ Gagal menghubungi AI Server (Python):", err.message);
+    console.error("❌ Gagal terhubung ke Python Flask:", err.message);
     res.status(500).json({ 
-      error: 'Server AI belum siap. Pastikan terminal Python sudah dijalankan.' 
+      error: "Can't Connect to AI Server. Pastikan Python Flask (Port 5001) sudah dinyalakan." 
     });
   }
 });

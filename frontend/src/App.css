@@ -182,3 +182,20 @@
     border-right-color: var(--border);
   }
 }
+
+/* Aturan khusus untuk menyembunyikan elemen tertentu saat cetak PDF */
+@media print {
+  nav, footer, button, .no-print {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  #printable-result {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin-top: 0 !important;
+  }
+}
