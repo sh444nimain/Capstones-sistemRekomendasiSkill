@@ -1,28 +1,28 @@
 import React, { useState, useEffect } from "react";
-import './App.css';
+import "./App.css";
 import AnalysisDashboard from "./components/AnalysisDashboard";
 import ResultDashboard from "./components/ResultDashboard";
 import SkillInput from "./components/SkillInput";
 import LandingPage from "./components/LandingPage"; // <-- IMPORT LANDING PAGE BARU
 
 // IMPORT SUPABASE DAN AUTH
-import { supabase } from './supabaseClient';
-import Auth from './components/Auth';
+import { supabase } from "./supabaseClient";
+import Auth from "./components/Auth";
 
 function App() {
   const [currentView, setCurrentView] = useState("input");
   const [darkMode, setDarkMode] = useState(false);
   const [session, setSession] = useState(null);
-  
+
   // State untuk mengontrol apakah Pop-up Login sedang terbuka
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Efek Mode Gelap
   useEffect(() => {
     if (darkMode) {
-      document.documentElement.classList.add('dark');
+      document.documentElement.classList.add("dark");
     } else {
-      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.remove("dark");
     }
   }, [darkMode]);
 
@@ -37,7 +37,7 @@ function App() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       // Jika berhasil login, otomatis tutup pop-up modalnya
-      if (session) setShowAuthModal(false); 
+      if (session) setShowAuthModal(false);
     });
 
     return () => subscription.unsubscribe();
@@ -52,17 +52,15 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-500 font-sans text-slate-900 dark:text-slate-100">
-      
       {/* ------------------------------------------------------------- */}
       {/* KONDISI A: JIKA PENGGUNA BELUM LOGIN (TAMPILKAN LANDING PAGE) */}
       {/* ------------------------------------------------------------- */}
       {!session ? (
-        <LandingPage 
-          onLoginClick={() => setShowAuthModal(true)} 
-          onRegisterClick={() => setShowAuthModal(true)} 
+        <LandingPage
+          onLoginClick={() => setShowAuthModal(true)}
+          onRegisterClick={() => setShowAuthModal(true)}
         />
       ) : (
-        
         /* ------------------------------------------------------------- */
         /* KONDISI B: JIKA PENGGUNA SUDAH LOGIN (TAMPILKAN APLIKASI UTAMA)*/
         /* ------------------------------------------------------------- */
@@ -70,8 +68,10 @@ function App() {
           {/* NAVBAR UTAMA (Hanya muncul jika sudah login) */}
           <nav className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-4 md:px-8 py-4 transition-all">
             <div className="max-w-[1440px] mx-auto flex justify-between items-center">
-
-              <div className="flex items-center gap-2 cursor-pointer" onClick={() => setCurrentView("input")}>
+              <div
+                className="flex items-center gap-2 cursor-pointer"
+                onClick={() => setCurrentView("input")}
+              >
                 <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 dark:shadow-none">
                   <span className="text-white font-black text-lg">S</span>
                 </div>
@@ -95,7 +95,6 @@ function App() {
                   Logout
                 </button>
               </div>
-
             </div>
           </nav>
 
@@ -109,13 +108,16 @@ function App() {
                   </span>
 
                   <h1 className="text-5xl md:text-6xl font-black mb-6 leading-tight tracking-tight">
-                    Cari Tahu <span className="text-blue-600 italic">Skill Gap</span> Kamu
+                    Cari Tahu{" "}
+                    <span className="text-blue-600 italic">Skill Gap</span> Kamu
                   </h1>
                   <p className="text-slate-500 dark:text-slate-400 text-lg max-w-2xl mx-auto leading-relaxed">
-                    Bandingkan keahlianmu dengan kebutuhan industri nyata melalui analisis NLP yang akurat untuk mendukung pekerjaan layak bagi mahasiswa.
+                    Bandingkan keahlianmu dengan kebutuhan industri nyata
+                    melalui analisis NLP yang akurat untuk mendukung pekerjaan
+                    layak bagi mahasiswa.
                   </p>
                 </header>
-                
+
                 <SkillInput onAnalyze={handleStartAnalysis} session={session} />
               </div>
             )}
@@ -123,10 +125,12 @@ function App() {
             {currentView === "loading" && (
               <div className="max-w-md mx-auto mt-32 text-center">
                 <div className="w-16 h-16 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-                <h3 className="text-2xl font-bold italic">Menganalisis Dataset...</h3>
+                <h3 className="text-2xl font-bold italic">
+                  Menganalisis Dataset...
+                </h3>
               </div>
             )}
-            
+
             {currentView === "result" && (
               <div className="max-w-6xl mx-auto px-4 space-y-8 animate-in fade-in duration-700">
                 <ResultDashboard onReset={() => setCurrentView("input")} />
@@ -151,12 +155,20 @@ function App() {
             </p>
             <div className="flex justify-center gap-6">
               <div className="flex flex-col items-center gap-2">
-                <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg shadow-yellow-100 dark:shadow-none">4</div>
-                <span className="text-[8px] font-bold text-slate-400">EDUCATION</span>
+                <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg shadow-yellow-100 dark:shadow-none">
+                  4
+                </div>
+                <span className="text-[8px] font-bold text-slate-400">
+                  EDUCATION
+                </span>
               </div>
               <div className="flex flex-col items-center gap-2">
-                <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg shadow-red-100 dark:shadow-none">8</div>
-                <span className="text-[8px] font-bold text-slate-400">WORK</span>
+                <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg shadow-red-100 dark:shadow-none">
+                  8
+                </div>
+                <span className="text-[8px] font-bold text-slate-400">
+                  WORK
+                </span>
               </div>
             </div>
           </footer>
@@ -168,7 +180,7 @@ function App() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-2 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             {/* Tombol Tutup Pop-up */}
-            <button 
+            <button
               onClick={() => setShowAuthModal(false)}
               className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xl font-bold"
             >
@@ -178,7 +190,6 @@ function App() {
           </div>
         </div>
       )}
-
     </div>
   );
 }
