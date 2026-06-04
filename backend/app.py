@@ -9,6 +9,7 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer
 import nltk
+import os
 
 # Download semua resource NLTK yang dibutuhkan oleh tim Data Science
 nltk.download('punkt')
@@ -20,9 +21,9 @@ CORS(app)
 
 # LOAD MODEL DAN DATASET
 try:
-    df = pd.read_csv('../data/processed/cleaned_all_job.csv')
-    tfidf_vectorizer = joblib.load('../data/processed/tfidf_vectorizer.pkl')
-    tfidf_matrix = joblib.load('../data/processed/tfidf_matrix.pkl')
+    df = pd.read_csv('Data/processed/cleaned_all_job.csv')
+    tfidf_vectorizer = joblib.load('Data/processed/tfidf_vectorizer.pkl')
+    tfidf_matrix = joblib.load('Data/processed/tfidf_matrix.pkl')
     print("✅ Model TF-IDF dan Dataset Berhasil Dimuat!")
 except Exception as e:
     print(f"❌ Gagal memuat file model/data: {str(e)}")
@@ -38,6 +39,13 @@ def preprocess_text(text):
     tokens = word_tokenize(text)
     tokens = [stemmer.stem(word) for word in tokens if word not in stop_words]
     return ' '.join(tokens)
+
+@app.route('/', methods=['GET'])
+def home():
+    return {
+        "status": "success",
+        "message": "Backend SkillMatch.AI aktif"
+    }
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -96,4 +104,7 @@ def predict():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(port=5001, debug=True)
+    app.run(
+        host='0.0.0.0',
+        port=int(os.environ.get('PORT', 5001))
+    )
