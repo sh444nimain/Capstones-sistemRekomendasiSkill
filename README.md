@@ -80,6 +80,22 @@ Perkembangan teknologi dan kebutuhan industri yang terus berubah menyebabkan ban
 
 ---
 
+## Tautan Deployment Produk
+
+- SkillMatch.AI: https://skillmatchai-six.vercel.app/
+- Dashboard: https://dashboard-skillmatchai.streamlit.app/
+
+---
+
+## Tautan Repository GitHub
+
+- Repository Utama: https://github.com/sh444nimain/Capstones-sistemRekomendasiSkill
+- Repository Frontend: https://github.com/sh444nimain/Capstone-frontend
+- Repository Backend: https://github.com/sh444nimain/Capstone-backend
+- Repository Dashboard: https://github.com/sanhappyending/dashboardCapstone
+
+---
+
 ## Struktur Repository
 
 ```text
@@ -89,9 +105,10 @@ Capstones-sistemRekomendasiSkill/
 ├── dashboard/
 ├── data-science/
 ├── data/
+├── docs/
 ├── frontend/
 ├── README.md
-└── data_dictionary.md
+└── package-lock.json
 ```
 
 ## Arsitektur Sistem
@@ -195,8 +212,5 @@ jupyter notebook
 
 ## Dokumentasi
 
-- Project Plan
+- Laporan Teknis Komprehensif
 - Data Dictionary
-- Notebook Data Science
-- Notebook AI Model
-- API Documentation
